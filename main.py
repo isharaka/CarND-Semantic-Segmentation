@@ -55,26 +55,30 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
     # 1x1 convolution on layer 7
-    conv7 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv7 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, strides=(1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3), kernel_initializer= tf.random_normal_initializer(stddev=0.01))
 
+    # Scale layer 4 output 
+    layer4_out_scaled = tf.multiply(vgg_layer4_out, 0.01)
     # 1x1 convolution on layer 4
-    conv4 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, strides=(1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv4 = tf.layers.conv2d(layer4_out_scaled, num_classes, 1, strides=(1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3), kernel_initializer= tf.random_normal_initializer(stddev=0.01))
     # Up sample conv7 by 2
-    conv7x2 = tf.layers.conv2d_transpose(conv7, num_classes, 4, strides=(2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv7x2 = tf.layers.conv2d_transpose(conv7, num_classes, 4, strides=(2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3), kernel_initializer= tf.random_normal_initializer(stddev=0.01))
 
     # Add conv4 to upsampled conv7 to produce fcn16 predicion
     fcn16 = tf.add(conv7x2, conv4)
 
+    # Scale layer 3 output 
+    layer3_out_scaled = tf.multiply(vgg_layer3_out, 0.0001)
     # 1x1 convolution on layer 3
-    conv3 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, strides=(1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv3 = tf.layers.conv2d(layer3_out_scaled, num_classes, 1, strides=(1,1), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3), kernel_initializer= tf.random_normal_initializer(stddev=0.01))
     # Up sample fcn16 by 2
-    fcn16x2 = tf.layers.conv2d_transpose(fcn16, num_classes, 4, strides=(2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    fcn16x2 = tf.layers.conv2d_transpose(fcn16, num_classes, 4, strides=(2, 2), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3), kernel_initializer= tf.random_normal_initializer(stddev=0.01))
 
     # Add skip connection from conv3 to upsampled fcn16
     pre_fcn8 = tf.add(fcn16x2, conv3)
 
     # Upsample by 8 to produce fcn8
-    fcn8 = tf.layers.conv2d_transpose(pre_fcn8, num_classes, 16, strides=(8, 8), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    fcn8 = tf.layers.conv2d_transpose(pre_fcn8, num_classes, 16, strides=(8, 8), padding='same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3), kernel_initializer= tf.random_normal_initializer(stddev=0.01))
 
     return fcn8
 tests.test_layers(layers)
@@ -167,10 +171,10 @@ def run():
         logits, training_operation, cross_entropy_loss = optimize(nn_last_layer, correct_label, learning_rate, num_classes)
 
         # TODO: Train NN using the train_nn function
-        train_nn(sess, 50, 5, get_batches_fn, training_operation, cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate)
+        train_nn(sess, 50, 5, get_batches_fn, training_operation, cross_entropy_loss, image_input, correct_label, keep_prob, learning_rate)
 
         # TODO: Save inference data using helper.save_inference_samples
-        helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, image_input)
 
         # OPTIONAL: Apply the trained model to a video
 
